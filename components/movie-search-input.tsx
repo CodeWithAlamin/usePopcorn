@@ -41,16 +41,18 @@ export default function MovieSearchInput({
   const [isDirty, setIsDirty] = useState(false);
   const [isPending, startTransition] = useTransition();
   const inputRef = useRef<HTMLInputElement | null>(null);
-  const pendingQueryRef = useRef<string | null>(null);
+  const [pendingQuery, setPendingQuery] = useState<string | null>(null);
 
   useEffect(() => {
-    const pendingQuery = pendingQueryRef.current;
     const normalizedDraft = normalizeSearchQuery(draftQuery);
 
     if (pendingQuery !== null) {
       if (urlQuery === pendingQuery) {
-        pendingQueryRef.current = null;
-        setIsDirty(false);
+        setPendingQuery(null);
+
+        if (normalizedDraft === urlQuery) {
+          setIsDirty(false);
+        }
       }
       return;
     }
@@ -62,15 +64,15 @@ export default function MovieSearchInput({
     if (normalizedDraft !== urlQuery) {
       setDraftQuery(urlQuery);
     }
-  }, [draftQuery, isDirty, urlQuery]);
+  }, [draftQuery, isDirty, pendingQuery, urlQuery]);
 
   const applySearch = useCallback(
     (rawValue: string): void => {
       const normalizedQuery = normalizeSearchQuery(rawValue);
-      pendingQueryRef.current = normalizedQuery;
+      setPendingQuery(normalizedQuery);
 
       if (normalizedQuery === urlQuery) {
-        pendingQueryRef.current = null;
+        setPendingQuery(null);
         setIsDirty(false);
         return;
       }
@@ -87,7 +89,9 @@ export default function MovieSearchInput({
 
       startTransition(() => {
         const nextQueryString = nextParams.toString();
-        const nextUrl = nextQueryString ? `${pathname}?${nextQueryString}` : pathname;
+        const nextUrl = nextQueryString
+          ? `${pathname}?${nextQueryString}`
+          : pathname;
 
         if (!urlQuery && normalizedQuery) {
           router.push(nextUrl, { scroll: false });
@@ -143,7 +147,11 @@ export default function MovieSearchInput({
           }}
         />
         <div className="absolute right-2 top-1/2 flex -translate-y-1/2 items-center gap-1.5">
-          <Button size="sm" className="h-8 rounded-xl px-3" disabled={isPending}>
+          <Button
+            size="sm"
+            className="h-8 rounded-xl px-3"
+            disabled={isPending}
+          >
             {isPending ? (
               <>
                 <LoaderCircle className="mr-1 size-3.5 motion-safe:animate-spin" />
